@@ -159,7 +159,8 @@ class KafkaApis(val requestChannel: RequestChannel,
       requestChannel.sendResponse(new RequestChannel.Response(request, new RequestOrResponseSend(request.connectionId, response)))
     }
 
-    if (offsetCommitRequest.versionId == 0) {
+    // hot fix for LIKAFKA-3492 (do not let offset commits/fetch requests go to zookeeper)
+    /*if (offsetCommitRequest.versionId == 0) {
       // for version 0 always store offsets to ZK
       val responseInfo = offsetCommitRequest.requestInfo.map {
         case (topicAndPartition, metaAndError) => {
@@ -181,7 +182,7 @@ class KafkaApis(val requestChannel: RequestChannel,
       }
 
       sendResponseCallback(responseInfo)
-    } else {
+    } else {*/
       // for version 1 and beyond store offsets in offset manager
 
       // compute the retention time based on the request version:
@@ -222,7 +223,7 @@ class KafkaApis(val requestChannel: RequestChannel,
         offsetCommitRequest.groupGenerationId,
         offsetData,
         sendResponseCallback)
-    }
+    //}
   }
 
   /**
@@ -473,7 +474,8 @@ class KafkaApis(val requestChannel: RequestChannel,
   def handleOffsetFetchRequest(request: RequestChannel.Request) {
     val offsetFetchRequest = request.requestObj.asInstanceOf[OffsetFetchRequest]
 
-    val response = if (offsetFetchRequest.versionId == 0) {
+    // hot fix for LIKAFKA-3492 (do not let offset commits/fetch requests go to zookeeper)
+    val response = /*if (offsetFetchRequest.versionId == 0) {
       // version 0 reads offsets from ZK
       val responseInfo = offsetFetchRequest.requestInfo.map( topicAndPartition => {
         val topicDirs = new ZKGroupTopicDirs(offsetFetchRequest.groupId, topicAndPartition.topic)
@@ -495,7 +497,7 @@ class KafkaApis(val requestChannel: RequestChannel,
       })
 
       OffsetFetchResponse(collection.immutable.Map(responseInfo: _*), offsetFetchRequest.correlationId)
-    } else {
+    } else */ {
       // version 1 reads offsets from Kafka
       val (unknownTopicPartitions, knownTopicPartitions) = offsetFetchRequest.requestInfo.partition(topicAndPartition =>
         metadataCache.getPartitionInfo(topicAndPartition.topic, topicAndPartition.partition).isEmpty
